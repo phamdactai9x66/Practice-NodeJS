@@ -1,46 +1,23 @@
 const express = require("express");
 const mongodb = require("mongoose");
 
-const Product = require("./models/product.model");
+const productRoute = require("./routes/product.route");
 
-const urlMongoDB = process.env.PRIVATE_KEY;
+const urlMongoDB =
+  "mongodb+srv://tai15122003311:XrxTEtyUOf1kIf82@cluster0.933sl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const app = express();
 
 require("dotenv").config();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 
 app.get("/", (req, res) => {
   res.send("welcome to server");
 });
 
-app.post("/api/products", async (req, res) => {
-  try {
-    const newProduct = await Product.create(req.body);
-
-    res.status(200).json({
-      data: newProduct,
-      errorCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/products", async (req, res) => {
-  try {
-    const products = await Product.find({});
-
-    res.status(200).json({
-      data: products,
-      errorCode: 200,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+app.use("/api/products", productRoute);
 
 mongodb
   .connect(urlMongoDB)
