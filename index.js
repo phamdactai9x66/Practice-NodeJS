@@ -2,6 +2,7 @@ const express = require("express");
 const mongodb = require("mongoose");
 
 const productRoute = require("./routes/product.route");
+const userRoute = require("./routes/user.route");
 
 const urlMongoDB =
   "mongodb+srv://tai15122003311:XrxTEtyUOf1kIf82@cluster0.933sl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -18,6 +19,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/products", productRoute);
+
+app.use("/user", userRoute);
 
 mongodb
   .connect(urlMongoDB)
