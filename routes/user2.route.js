@@ -9,6 +9,20 @@ const { route } = require("./user.route");
 
 const router = express.Router();
 
+function verifyJWT(token) {
+  try {
+    return {
+      payload: jwt.verify(token, process.env.PRIVATE_KEY_JWT),
+      expired: false,
+    };
+  } catch (error) {
+    if (error.name == "TokenExpiredError") {
+      return { payload: jwt.decode(token), expired: true };
+    }
+    throw error;
+  }
+}
+
 router.post("/register", async (req, res) => {
   try {
     const { username: username2 } = req.body;
@@ -82,12 +96,11 @@ router.post("/login", async (req, res) => {
 
     // check refresh token in database and check token is expired yed
 
-    const checkExpired = jwt.verify(
-      findUser.refresh_token,
-      process.env.PRIVATE_KEY_JWT
-    );
+    // const checkExpired = verifyJWT(findUser.refresh_token).expired;
 
-    if (!findUser.refresh_token || !checkExpired) {
+    // console.log(checkExpired);
+
+    if (!findUser.refresh_token) {
       const genRefreshToken = jwt.sign(
         {
           username: findUser.username,
@@ -189,6 +202,51 @@ router.post("/refresh_token", async (req, res) => {
     res.send({
       access_token: genAccessToken,
       user: findUser.username,
+    });
+  } catch (error) {
+    res.send({ error: error.message });
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  try {
+    const accessTokenHeader = req.headers.authorization;
+
+    if (!accessTokenHeader) {
+      return res.send(401).send({
+        errorCode: 401,
+        errorMessage: "Access token is not found",
+      });
+    }
+
+    const parseAccessToken = jwt.verify(
+      accessTokenHeader,
+      process.env.PRIVATE_KEY_JWT
+    );
+
+    // check access token in headers
+    if (!parseAccessToken) {
+      return res.status(401).send({
+        errorCode: 401,
+        errorMessage: "Access token invalid",
+      });
+    }
+
+    const findUser = await getUser(parseAccessToken.username);
+
+    if (!findUser) {
+      return res.status(400).send({
+        errorCode: 400,
+        message: "User not found",
+      });
+    }
+
+    await User.findByIdAndUpdate(findUser._id, {
+      refresh_token: "",
+    });
+
+    res.send({
+      message: "Logout success",
     });
   } catch (error) {
     res.send({ error: error.message });
